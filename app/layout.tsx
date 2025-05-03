@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Perspective Prism",
+  title: "Perspective Prism by Jay Jhaveri",
   description: "Explore diverse viewpoints with AI-powered personas.",
 };
 
