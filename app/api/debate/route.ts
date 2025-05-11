@@ -1,4 +1,5 @@
 import { NextRequest } from 'next/server';
+import { supabase } from '@/lib/supabaseClient';
 
 export const runtime = 'edge';
 
@@ -9,7 +10,7 @@ interface Message {
 }
 
 interface DebateRequest {
-    messages: Message[];
+    debateId: string;
     personas: {
         name: string;
         style: string;
@@ -19,22 +20,36 @@ interface DebateRequest {
 }
 
 export async function POST(req: NextRequest) {
-    const { messages, personas }: DebateRequest = await req.json();
+    const { debateId, personas }: DebateRequest = await req.json();
 
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-        return new Response(JSON.stringify({ error: 'Missing or invalid message history.' }), {
+    if (!debateId || !personas || personas.length === 0) {
+        return new Response(JSON.stringify({ error: 'Missing or invalid debateId or personas.' }), {
             status: 400,
         });
     }
 
-    // Get user input and last persona message
+    // Fetch messages from Supabase
+    const { data: messages, error: fetchError } = await supabase
+        .from('messages')
+        .select('id, role, name, content')
+        .eq('debate_id', debateId)
+        .order('created_at', { ascending: true });
+
+    if (fetchError) {
+        console.error('Error fetching messages:', fetchError);
+        return new Response(JSON.stringify({ error: 'Error fetching messages.' }), {
+            status: 500,
+        });
+    }
+
+    // Identify the last user input and the last persona message
     const userInput = messages.find((m) => m.role === 'user')?.content ?? '';
     const lastPersonaMsg = [...messages].reverse().find((m) => m.role === 'persona');
 
     const previousSpeaker = lastPersonaMsg?.name ?? 'User';
     const previousContent = lastPersonaMsg?.content ?? userInput;
 
-    // Pick next persona sequentially (not randomly)
+    // Determine the next persona sequentially
     const spokenPersonas = messages
         .filter((m) => m.role === 'persona')
         .map((m) => m.name);
@@ -45,7 +60,7 @@ export async function POST(req: NextRequest) {
             ? remainingPersonas[0]
             : personas[(spokenPersonas.length) % personas.length];
 
-    // Construct system prompt with context
+    // Construct the system prompt with context
     const systemPrompt = {
         role: 'system',
         content: `${nextPersona.prompt}
@@ -61,7 +76,7 @@ You are ${nextPersona.name}, a unique persona in a thoughtful roundtable debate.
 Stay in character. Refer to ${previousSpeaker} by name. Challenge or build on their point respectfully. Add new insights. Keep it short — 1–2 concise paragraphs.`,
     };
 
-    // Format all previous messages for LLM
+    // Format messages for LLM
     const formattedMessages = messages.map((m) => ({
         role: 'user',
         content: `${m.name}: ${m.content}`,
@@ -86,6 +101,7 @@ Stay in character. Refer to ${previousSpeaker} by name. Challenge or build on th
     const decoder = new TextDecoder();
     const reader = groqRes.body?.getReader();
 
+    let accumulatedText = '';
     const stream = new ReadableStream({
         async start(controller) {
             const encoder = new TextEncoder();
@@ -95,6 +111,8 @@ Stay in character. Refer to ${previousSpeaker} by name. Challenge or build on th
                 if (done) break;
 
                 const chunk = decoder.decode(value, { stream: true });
+                accumulatedText += chunk;
+
                 const lines = chunk.split('\n').filter((line) => line.trim());
 
                 for (const line of lines) {
@@ -105,11 +123,29 @@ Stay in character. Refer to ${previousSpeaker} by name. Challenge or build on th
                         const parsed = JSON.parse(jsonStr);
                         const token = parsed.choices?.[0]?.delta?.content;
                         if (token) {
-                            controller.enqueue(new TextEncoder().encode(token));
+                            controller.enqueue(encoder.encode(token));
                         }
                     } catch (err) {
                         console.warn('Skipped malformed stream chunk:', jsonStr);
                     }
+                }
+            }
+
+            // Store the generated response in Supabase
+            if (accumulatedText.trim()) {
+                const { error: insertError } = await supabase
+                    .from('messages')
+                    .insert([
+                        {
+                            debate_id: debateId,
+                            role: 'persona',
+                            name: nextPersona.name,
+                            content: accumulatedText,
+                        },
+                    ]);
+
+                if (insertError) {
+                    console.error('Error inserting message:', insertError);
                 }
             }
 

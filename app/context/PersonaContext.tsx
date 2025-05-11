@@ -3,6 +3,7 @@
 import React, { createContext, useContext, useState } from "react";
 
 export interface Persona {
+    persona_id: string;
     name: string;
     style: string;
     prompt: string;
