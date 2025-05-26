@@ -31,7 +31,7 @@ export async function POST(req: NextRequest) {
     // Fetch messages from Supabase
     const { data: messages, error: fetchError } = await supabase
         .from('messages')
-        .select('id, role, name, content')
+        .select('message_id, role, name, content') // Use message_id instead of id
         .eq('debate_id', debateId)
         .order('created_at', { ascending: true });
 
@@ -42,8 +42,34 @@ export async function POST(req: NextRequest) {
         });
     }
 
-    // Identify the last user input and the last persona message
+    // Insert user input as the first message in the debate if not present in the table
     const userInput = messages.find((m) => m.role === 'user')?.content ?? '';
+    if (messages.length === 0 && userInput) {
+        const { error: userInsertError } = await supabase
+            .from('messages')
+            .insert([
+                {
+                    debate_id: debateId,
+                    role: 'user',
+                    name: 'You',
+                    content: userInput,
+                },
+            ]);
+        if (userInsertError) {
+            console.error('Error inserting user input message:', userInsertError);
+        }
+        // Refetch messages to include the just-inserted user message
+        const refetch = await supabase
+            .from('messages')
+            .select('message_id, role, name, content')
+            .eq('debate_id', debateId)
+            .order('created_at', { ascending: true });
+        if (!refetch.error) {
+            messages.splice(0, messages.length, ...refetch.data);
+        }
+    }
+
+    // Identify the last user input and the last persona message
     const lastPersonaMsg = [...messages].reverse().find((m) => m.role === 'persona');
 
     const previousSpeaker = lastPersonaMsg?.name ?? 'User';
@@ -61,19 +87,21 @@ export async function POST(req: NextRequest) {
             : personas[(spokenPersonas.length) % personas.length];
 
     // Construct the system prompt with context
+    // Improved system prompt logic for first persona turn
+    let systemPromptContent;
+    if (!lastPersonaMsg) {
+        // First persona turn: respond directly to user input
+        systemPromptContent = `${nextPersona.prompt}
+\nYou are ${nextPersona.name}, a unique persona in a thoughtful roundtable debate.\n\nThe user started the conversation with:\n"${userInput}"\n\nRespond directly to the user's statement above as your opening perspective. Stay in character, introduce your viewpoint, and set the stage for a thoughtful debate. Keep it short — 1–2 concise paragraphs.`;
+    } else {
+        // Subsequent turns: respond to previous persona
+        systemPromptContent = `${nextPersona.prompt}
+\nYou are ${nextPersona.name}, a unique persona in a thoughtful roundtable debate.\n\n🔹 The user started the conversation with:\n"${userInput}"\n\n🔹 You are responding to ${previousSpeaker}, who said:\n"${previousContent}"\n\nStay in character. Refer to ${previousSpeaker} by name. Challenge or build on their point respectfully. Add new insights. Keep it short — 1–2 concise paragraphs.`;
+    }
+
     const systemPrompt = {
         role: 'system',
-        content: `${nextPersona.prompt}
-
-You are ${nextPersona.name}, a unique persona in a thoughtful roundtable debate.
-
-🔹 The user started the conversation with:
-"${userInput}"
-
-🔹 You are responding to ${previousSpeaker}, who said:
-"${previousContent}"
-
-Stay in character. Refer to ${previousSpeaker} by name. Challenge or build on their point respectfully. Add new insights. Keep it short — 1–2 concise paragraphs.`,
+        content: systemPromptContent,
     };
 
     // Format messages for LLM
@@ -111,7 +139,6 @@ Stay in character. Refer to ${previousSpeaker} by name. Challenge or build on th
                 if (done) break;
 
                 const chunk = decoder.decode(value, { stream: true });
-                accumulatedText += chunk;
 
                 const lines = chunk.split('\n').filter((line) => line.trim());
 
@@ -123,6 +150,7 @@ Stay in character. Refer to ${previousSpeaker} by name. Challenge or build on th
                         const parsed = JSON.parse(jsonStr);
                         const token = parsed.choices?.[0]?.delta?.content;
                         if (token) {
+                            accumulatedText += token;
                             controller.enqueue(encoder.encode(token));
                         }
                     } catch (err) {
@@ -133,6 +161,7 @@ Stay in character. Refer to ${previousSpeaker} by name. Challenge or build on th
 
             // Store the generated response in Supabase
             if (accumulatedText.trim()) {
+                console.log("accumulatedText:", accumulatedText);
                 const { error: insertError } = await supabase
                     .from('messages')
                     .insert([

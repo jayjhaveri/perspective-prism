@@ -17,7 +17,7 @@ interface Message {
 
 export default function DebatePage() {
     const router = useRouter();
-    const { input, personas } = usePersonaContext();
+    const { input, personas, debateId } = usePersonaContext();
 
     const [userInput, setUserInput] = useState("");
     const [messages, setMessages] = useState<Message[]>([]);
@@ -31,17 +31,27 @@ export default function DebatePage() {
     const [currentAutoTurn, setCurrentAutoTurn] = useState(0);
     const abortRef = useRef<AbortController | null>(null);
 
-    const currentPersona = personas[turnIndex % personas.length];
+    // Only compute currentPersona if personas is non-empty
+    const currentPersona = personas.length > 0 ? personas[turnIndex % personas.length] : null;
+    console.log("Current Persona:", currentPersona);
+    console.log("DebatePage debateId:", debateId); // Debugging
 
     // Redirect if data is missing
     useEffect(() => {
-        if (!input?.trim() || !Array.isArray(personas) || personas.length === 0) {
+        if (!input?.trim() || !Array.isArray(personas) || personas.length === 0 || !debateId) {
+            console.error("Invalid input, personas data, or debateId");
             router.replace("/");
         } else {
-            setMessages([{ role: "user", name: "You", content: input }]);
+            // Insert user input as a message if not already present
+            setMessages((prev) => {
+                if (prev.length === 0 || prev[0].content !== input) {
+                    return [{ role: "user", name: "You", content: input, debate_id: debateId }, ...prev];
+                }
+                return prev;
+            });
             setDebateStarted(true);
         }
-    }, [input, personas, router]);
+    }, [input, personas, debateId, router]);
 
     // Auto play loop
     useEffect(() => {
@@ -52,70 +62,57 @@ export default function DebatePage() {
     }, [messages, typing, currentAutoTurn, autoMode, debateStarted]);
 
     const handleStreamTurn = async () => {
+        if (!personas || personas.length === 0) {
+            setTyping(false);
+            return;
+        }
+        if (!debateId) {
+            setTyping(false);
+            alert("Error: Debate ID is missing. Please restart the debate.");
+            router.replace("/");
+            return;
+        }
         setTyping(true);
         const controller = new AbortController();
         abortRef.current = controller;
 
-        const nextPersona = personas[turnIndex % personas.length];
+        // Determine the next persona based on the number of persona messages
+        const personaMessagesCount = messages.filter(m => m.role === "persona").length;
+        const nextPersona = personas[personaMessagesCount % personas.length];
 
         const res = await fetch("/api/debate", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ messages, personas }),
+            body: JSON.stringify({ messages, personas, debateId }),
             signal: controller.signal,
         });
 
         const reader = res.body?.getReader();
         if (!reader) {
-            console.error("No response body from /api/debate");
             setTyping(false);
             return;
         }
 
         const decoder = new TextDecoder();
-        const encoder = new TextEncoder();
-
-        // Start with empty message placeholder
         let accumulatedText = "";
-        setMessages((prev) => [
-            ...prev.slice(0, -1),
-            { ...prev[prev.length - 1], name: nextPersona.name, content: "" },
-        ]);
 
         while (true) {
             const { done, value } = await reader.read();
             if (done) break;
-
             const chunk = decoder.decode(value, { stream: true });
             accumulatedText += chunk;
-
-            setMessages((prev) => {
-                const updated = [...prev];
-                const lastMsg = updated[updated.length - 1];
-                updated[updated.length - 1] = {
-                    ...lastMsg,
-                    name: nextPersona.name,
-                    content: accumulatedText,
-                };
-                return updated;
-            });
         }
 
-        if (!accumulatedText.trim()) {
-            setMessages((prev) => [
-                ...prev.slice(0, -1),
-                { ...prev[prev.length - 1], name: nextPersona.name, content: "(No response)" },
-            ]);
-        }
-
+        setMessages((prev) => [
+            ...prev,
+            { role: "persona", name: nextPersona.name, content: accumulatedText.trim() || "(No response)" }
+        ]);
         setTyping(false);
         setCurrentAutoTurn((prev) => prev + 1);
     };
 
     const handleNextTurn = () => {
-        if (typing || messages[messages.length - 1]?.name === "Loading...") return;
-        const nextMsg: Message = { role: "persona", name: "Loading...", content: "" };
-        setMessages((prev) => [...prev, nextMsg]);
+        if (typing) return;
         setTurnIndex((prev) => prev + 1);
         handleStreamTurn();
     };
@@ -159,7 +156,7 @@ export default function DebatePage() {
                         {messages.map((m, idx) => (
                             <Card
                                 key={idx}
-                                className={`bg-muted ${m.name === currentPersona.name ? "border-2 border-blue-500" : ""
+                                className={`bg-muted ${currentPersona && m.name === currentPersona.name ? "border-2 border-blue-500" : ""
                                     }`}
                             >
                                 <CardHeader>

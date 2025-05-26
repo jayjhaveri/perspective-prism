@@ -14,9 +14,11 @@ interface PersonaContextType {
     input: string;
     setInput: React.Dispatch<React.SetStateAction<string>>;
     personas: Persona[];
-    setPersonas: React.Dispatch<React.SetStateAction<Persona[]>>; // <-- FIXED
+    setPersonas: React.Dispatch<React.SetStateAction<Persona[]>>;
     selectedPersonas: Persona[];
-    setSelectedPersonas: React.Dispatch<React.SetStateAction<Persona[]>>; // <-- FIXED
+    setSelectedPersonas: React.Dispatch<React.SetStateAction<Persona[]>>;
+    debateId: string | null;
+    setDebateId: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 const PersonaContext = createContext<PersonaContextType | undefined>(undefined);
@@ -25,6 +27,7 @@ export const PersonaProvider: React.FC<{ children: React.ReactNode }> = ({ child
     const [input, setInput] = useState("");
     const [personas, setPersonas] = useState<Persona[]>([]);
     const [selectedPersonas, setSelectedPersonas] = useState<Persona[]>([]);
+    const [debateId, setDebateId] = useState<string | null>(null);
 
     return (
         <PersonaContext.Provider
@@ -35,6 +38,8 @@ export const PersonaProvider: React.FC<{ children: React.ReactNode }> = ({ child
                 setPersonas,
                 selectedPersonas,
                 setSelectedPersonas,
+                debateId,
+                setDebateId,
             }}
         >
             {children}

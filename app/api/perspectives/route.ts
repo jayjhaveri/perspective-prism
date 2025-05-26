@@ -53,6 +53,7 @@ export async function POST(req: NextRequest) {
                     user_id: userId,          // Associate with the user
                     content: reply,
                     role: 'persona',
+                    name: persona.name,
                 });
 
             if (insertError) {

@@ -30,6 +30,8 @@ export default function PerspectivePrism({ user }: Props) {
         setPersonas,
         selectedPersonas,
         setSelectedPersonas,
+        debateId,
+        setDebateId,
     } = usePersonaContext();
 
     const [loading, setLoading] = useState(false);
@@ -37,7 +39,14 @@ export default function PerspectivePrism({ user }: Props) {
     const [stage, setStage] = useState<"input" | "review">("input");
     const [mode, setMode] = useState<"standard" | "debate">("standard");
     const [responses, setResponses] = useState<{ name: string; style: string; response: string }[]>([]);
-    const [debateId, setDebateId] = useState<string | null>(null);
+    const [localDebateId, setLocalDebateId] = useState<string | null>(null);
+
+    // Reset localDebateId when returning to input stage
+    React.useEffect(() => {
+        if (stage === "input") {
+            setLocalDebateId(null);
+        }
+    }, [stage]);
 
     const removePersona = (index: number) => {
         setPersonas((prev: Persona[]) => prev.filter((_, i: number) => i !== index));
@@ -51,6 +60,8 @@ export default function PerspectivePrism({ user }: Props) {
 
         setLoading(true);
 
+        let newDebateId = null;
+
         if (mode === "debate") {
             const { data, error } = await supabase
                 .from("debates")
@@ -58,24 +69,30 @@ export default function PerspectivePrism({ user }: Props) {
                 .select()
                 .single();
 
+            //print debate id
+            console.log("New Debate ID:", data?.debate_id);
+
             if (error) {
                 console.error("Error creating debate:", error.message);
                 setLoading(false);
                 return;
             }
 
-            setDebateId(data.id);
+            setDebateId(data.debate_id); // context
+            setLocalDebateId(data.debate_id); // local
+            newDebateId = data.debate_id;
+        } else {
+            setLocalDebateId(null);
         }
 
         const res = await fetch("/api/generate-personas", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ input, debateId }),
+            body: JSON.stringify({ input, debateId: newDebateId }),
         });
 
         const data = await res.json();
 
-        // Reset selected personas with the newly generated ones
         setSelectedPersonas(data.personas || []);
         setLoading(false);
         setStage("review");
@@ -109,6 +126,21 @@ export default function PerspectivePrism({ user }: Props) {
             }
         }
 
+        if (mode === "debate") {
+            if (!localDebateId) {
+                alert("Debate ID is not ready yet. Please wait a moment and try again.");
+                setLoading(false);
+                return;
+            }
+            setPersonas([...personas, ...selectedPersonas]);
+            setSelectedPersonas([]);
+            setStage("input");
+            setLoading(false);
+            router.push("/debate");
+            return;
+        }
+
+        // Only run this for standard mode
         const payload = {
             input,
             userId: user.id,
@@ -208,7 +240,7 @@ export default function PerspectivePrism({ user }: Props) {
                                 }
                             />
 
-                            <Button onClick={handleConfirm} disabled={loading}>
+                            <Button onClick={handleConfirm} disabled={loading || (mode === "debate" && !localDebateId)}>
                                 {loading ? <Loader className="animate-spin" /> : mode === "debate" ? "Start Debate" : "Generate Perspectives"}
                             </Button>
                         </div>
