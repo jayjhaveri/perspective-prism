@@ -1,0 +1,122 @@
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 260 33% 98%;
+    --foreground: 260 10% 10%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 260 10% 10%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 260 10% 10%;
+
+    --primary: 260 73% 75%;
+    --primary-foreground: 210 40% 98%;
+
+    --secondary: 260 20% 96%;
+    --secondary-foreground: 260 30% 30%;
+
+    --muted: 260 10% 96%;
+    --muted-foreground: 260 10% 45%;
+
+    --accent: 260 73% 94%;
+    --accent-foreground: 260 30% 30%;
+
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 210 40% 98%;
+
+    --border: 260 20% 90%;
+    --input: 260 20% 90%;
+    --ring: 260 73% 70%;
+
+    --radius: 0.75rem;
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 260 20% 10%;
+    --foreground: 260 10% 98%;
+
+    --card: 260 20% 12%;
+    --card-foreground: 260 10% 98%;
+
+    --popover: 260 20% 12%;
+    --popover-foreground: 260 10% 98%;
+
+    --primary: 260 73% 75%;
+    --primary-foreground: 260 10% 10%;
+
+    --secondary: 260 20% 20%;
+    --secondary-foreground: 260 10% 98%;
+
+    --muted: 260 20% 20%;
+    --muted-foreground: 260 10% 70%;
+
+    --accent: 260 20% 25%;
+    --accent-foreground: 260 10% 98%;
+
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 260 10% 98%;
+
+    --border: 260 20% 25%;
+    --input: 260 20% 25%;
+    --ring: 260 73% 70%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+.persona-card {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.persona-card:hover {
+  transform: translateY(-4px);
+}
+
+.typing-indicator::after {
+  content: '|';
+  animation: blink 1s step-end infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.debate-message {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: fadeIn 0.5s forwards;
+}
+
+@keyframes fadeIn {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.message-appear {
+  animation-delay: calc(var(--index) * 100ms);
+}
