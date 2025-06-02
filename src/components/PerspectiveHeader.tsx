@@ -1,6 +1,5 @@
-
 import { Button } from "@/components/ui/button";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
   DropdownMenu,
@@ -14,11 +13,21 @@ import { History, LogIn, Menu, Plus, User, LogOut } from "lucide-react";
 
 const PerspectiveHeader = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, signOut } = useAuth();
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/');
+  };
+
+  // Helper for New button: reload if already on /, else navigate
+  const handleNew = () => {
+    if (location.pathname === "/") {
+      window.location.reload();
+    } else {
+      navigate("/");
+    }
   };
 
   return (
@@ -44,7 +53,7 @@ const PerspectiveHeader = () => {
 
               <Button
                 variant="ghost"
-                onClick={() => navigate("/")}
+                onClick={handleNew}
                 className="hidden sm:flex"
               >
                 <Plus className="mr-2 h-4 w-4" />
@@ -73,7 +82,7 @@ const PerspectiveHeader = () => {
                   <History className="mr-2 h-4 w-4" />
                   History
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate("/")}>
+                <DropdownMenuItem onClick={handleNew}>
                   <Plus className="mr-2 h-4 w-4" />
                   New Session
                 </DropdownMenuItem>
@@ -96,7 +105,7 @@ const PerspectiveHeader = () => {
               <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Menu</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate("/")}>
+                <DropdownMenuItem onClick={handleNew}>
                   <Plus className="mr-2 h-4 w-4" />
                   New
                 </DropdownMenuItem>
