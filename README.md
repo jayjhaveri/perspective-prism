@@ -1,58 +1,47 @@
-# Welcome to your Lovable project
+# Perspective Prism
 
-## Project info
+## Project Description
 
-**URL**: https://lovable.dev/projects/0e38c15b-7733-44f5-a943-a9c7b310f9f6
+Perspective Prism is an AI-powered thinking companion that transforms any user input — a question, idea, dilemma, or draft — into responses from multiple distinct personas, such as:
 
-## How can I edit this code?
+- 🧠 The Analyst – Rational, data-driven, structured
+- 💬 The Empath – Emotionally intuitive, reflective
+- 🧘 The Sage – Philosophical, timeless, poetic
+- 🚀 The Strategist – Tactical, action-focused
+- 🎨 The Creator – Playful, humorous, expressive
 
-There are several ways of editing your application.
+People often struggle with overthinking, creative blocks, or decision paralysis. Whether it’s a personal dilemma, writing task, or business idea, we tend to see it through a narrow mental lens — our own. While general-purpose AI tools (like ChatGPT) can provide answers, they usually reflect a single tone or thinking style. This limits reflection and insight, especially for creators, thinkers, and decision-makers who crave depth, nuance, or emotional clarity.
 
-**Use Lovable**
+Perspective Prism helps users rethink their ideas through diverse cognitive and emotional lenses, and even watch those perspectives interact, just like getting feedback from a room full of very different minds.
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/0e38c15b-7733-44f5-a943-a9c7b310f9f6) and start prompting.
+## Key Features
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Multi-Perspective Responses:** Enter a prompt and receive five uniquely stylized responses — each reflecting a different mindset. This encourages better reflection, decision-making, and creativity.
+- **Debate Mode:** Activate Debate Mode to watch personas interact in a turn-based conversation. Each persona replies to the last speaker, not just the user input, mirroring how different minds would respond in a live room. The user can watch the debate unfold turn-by-turn, with an option to interject or ask follow-up questions.
+- **Clean, Emotionally Engaging UI:** Web-based interface designed for clarity and inspiration.
 
-**Use your preferred IDE**
+## MVP Features
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+- Input box for idea/dilemma
+- Persona selection or default to 5 core personas
+- Multi-panel response view for standard mode
+- Debate Mode with turn-by-turn persona interaction
+- Clean, emotionally engaging UI (web-based)
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+## Who is it for?
 
-Follow these steps:
+Perspective Prism helps users see their thoughts through radically different lenses, unlocking insight, creativity, and clarity. It blends utility and expression, making it useful for:
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+- Writers
+- Thinkers
+- Coaches
+- Overthinkers
+- Journalers
+- Curious minds
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+It’s not just a tool — it’s a thinking experience.
 
-# Step 3: Install the necessary dependencies.
-npm i
-
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
-
-**Edit a file directly in GitHub**
-
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
+## Technologies Used
 
 - Vite
 - TypeScript
@@ -60,14 +49,18 @@ This project is built with:
 - shadcn-ui
 - Tailwind CSS
 
-## How can I deploy this project?
+## Getting Started
 
-Simply open [Lovable](https://lovable.dev/projects/0e38c15b-7733-44f5-a943-a9c7b310f9f6) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
+1. **Clone the repository:**
+   ```sh
+   git clone <YOUR_GIT_URL>
+   cd <YOUR_PROJECT_NAME>
+   ```
+2. **Install dependencies:**
+   ```sh
+   npm i
+   ```
+3. **Start the development server:**
+   ```sh
+   npm run dev
+   ```
